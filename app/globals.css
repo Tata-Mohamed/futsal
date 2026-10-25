@@ -1,26 +1,93 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --ink: #0e1322;
+  --panel: #171d33;
+  --raised: #202843;
+  --line: #2b3558;
+  --chalk: #edebe3;
+  --muted: #8f98b8;
+  --turf: #176b47;
+  --turf-deep: #0f4a32;
+  --bib: #e8f04a;
+  --team-a: #4cc9f0;
+  --team-b: #ff5d8f;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --color-ink: var(--ink);
+  --color-panel: var(--panel);
+  --color-raised: var(--raised);
+  --color-line: var(--line);
+  --color-chalk: var(--chalk);
+  --color-muted: var(--muted);
+  --color-turf: var(--turf);
+  --color-turf-deep: var(--turf-deep);
+  --color-bib: var(--bib);
+  --color-team-a: var(--team-a);
+  --color-team-b: var(--team-b);
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --font-display: var(--font-bigshoulders), system-ui, sans-serif;
+  --font-sans: var(--font-hanken), system-ui, sans-serif;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: radial-gradient(120% 55% at 50% -10%, #1c2850 0%, var(--ink) 65%) fixed;
+  background-color: var(--ink);
+  color: var(--chalk);
+  font-family: var(--font-sans);
+}
+
+/* Tracé des lignes du terrain : chaque élément a pathLength="1" */
+.draw {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: draw 1.4s cubic-bezier(0.65, 0, 0.35, 1) forwards;
+}
+
+@keyframes draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .draw {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+  * {
+    transition: none !important;
+  }
+}
+
+
+/* ---- À AJOUTER À LA FIN DE app/globals.css ---- */
+
+/* Anneau de note : part de "vide" et finit à la valeur définie en style en ligne */
+.ring {
+  animation: ring-in 1.3s cubic-bezier(0.22, 1, 0.36, 1) 0.3s both;
+}
+@keyframes ring-in {
+  from {
+    stroke-dashoffset: 100;
+  }
+}
+
+/* Apparition de la pelouse sur la page d'un match */
+.reveal {
+  animation: reveal 0.9s ease-out both;
+}
+@keyframes reveal {
+  from {
+    opacity: 0;
+    transform: scale(1.03);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ring,
+  .reveal {
+    animation: none;
+  }
 }

@@ -1,0 +1,144 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  PLAYER
+  MANAGER
+}
+
+enum Plan {
+  FREE
+  PREMIUM
+}
+
+enum TeamSide {
+  A
+  B
+}
+
+enum FriendStatus {
+  PENDING
+  ACCEPTED
+}
+
+model Five {
+  id      String  @id @default(cuid())
+  name    String
+  city    String
+  indoor  Boolean @default(false)
+  pitches Pitch[]
+  users   User[]  @relation("FiveManagers")
+}
+
+model Pitch {
+  id      String  @id @default(cuid())
+  fiveId  String
+  five    Five    @relation(fields: [fiveId], references: [id], onDelete: Cascade)
+  name    String
+  lengthM Float   @default(25)
+  widthM  Float   @default(15)
+  matches Match[]
+}
+
+model User {
+  id        String   @id // same id as Supabase auth user
+  email     String   @unique
+  name      String
+  avatarUrl String?
+  role      Role     @default(PLAYER)
+  plan      Plan     @default(FREE)
+  isDemo    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  managedFiveId String?
+  managedFive   Five?   @relation("FiveManagers", fields: [managedFiveId], references: [id])
+
+  participations Participation[]
+  sentFriends    Friendship[]    @relation("FriendSender")
+  receivedFriends Friendship[]   @relation("FriendReceiver")
+  subscription   Subscription?
+}
+
+model Friendship {
+  id         String       @id @default(cuid())
+  senderId   String
+  receiverId String
+  sender     User         @relation("FriendSender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver   User         @relation("FriendReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  status     FriendStatus @default(PENDING)
+  createdAt  DateTime     @default(now())
+
+  @@unique([senderId, receiverId])
+}
+
+model Match {
+  id              String          @id @default(cuid())
+  pitchId         String
+  pitch           Pitch           @relation(fields: [pitchId], references: [id], onDelete: Cascade)
+  startedAt       DateTime
+  durationMinutes Int             @default(50)
+  scoreA          Int             @default(0)
+  scoreB          Int             @default(0)
+  source          String          @default("demo") // demo | import
+  participations  Participation[]
+
+  @@index([startedAt])
+}
+
+model Participation {
+  id        String    @id @default(cuid())
+  matchId   String
+  match     Match     @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  team      TeamSide
+  stats     MatchStats?
+  // [{ "t": seconds, "x": meters, "y": meters }, ...] kept as JSON for performance
+  positions Json?
+
+  @@unique([matchId, userId])
+}
+
+model MatchStats {
+  id              String        @id @default(cuid())
+  participationId String        @unique
+  participation   Participation @relation(fields: [participationId], references: [id], onDelete: Cascade)
+
+  distanceM       Float
+  maxSpeedKmh     Float
+  avgSpeedKmh     Float
+  sprints         Int
+  sprintDistanceM Float
+  accelerations   Int
+  decelerations   Int
+  playerLoad      Float
+  avgHeartRate    Int?
+
+  // time in seconds per intensity zone
+  zoneWalkS       Int           @default(0)
+  zoneJogS        Int           @default(0)
+  zoneRunS        Int           @default(0)
+  zoneSprintS     Int           @default(0)
+
+  // not shown in v1 (need camera or manual tagging)
+  shots           Int?
+  passes          Int?
+  dribbles        Int?
+}
+
+model Subscription {
+  id                   String   @id @default(cuid())
+  userId               String   @unique
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  stripeCustomerId     String   @unique
+  stripeSubscriptionId String?  @unique
+  status               String
+  currentPeriodEnd     DateTime?
+}
